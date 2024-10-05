@@ -1,0 +1,174 @@
+module vedic_32(
+output [63:0]s,
+input [31:0]a,b
+    );
+    wire [31:0]v1;
+    wire [31:0]v2;
+    wire [31:0]v3;
+    wire [31:0]v4;
+    wire [31:0]r1;
+    wire [31:0]r2;
+    wire cr1,cr2,cr3;
+    vedic_16 vmul1(v1[31:0],a[15:0],b[15:0]);
+    vedic_16 vmul2(v2[31:0],a[31:16],b[15:0]);
+    vedic_16 vmul3(v3[31:0],a[15:0],b[31:16]);
+    vedic_16 vmul4(v4[31:0],a[31:16],b[31:16]);
+    rca_32 inst7(v2[31:0],v3[31:0],r1[31:0],cr1);
+    rca_32 inst8(r1[31:0],{16'h0000,v1[31:16]},r2[31:0],cr2);
+    rca_32 inst9(v4[31:0],{cr1,3'b000,12'h000,r2[31:16]},s[63:32],cr3);
+    assign s[15:0]=v1[15:0];
+    assign s[31:16]=r2[15:0];
+endmodule
+   
+module vedic_16(
+output [31:0]s,
+input [15:0]a,b
+    );
+    wire [15:0]v1;
+    wire [15:0]v2;
+    wire [15:0]v3;
+    wire [15:0]v4;
+    wire [15:0]r1;
+    wire [15:0]r2;
+    wire cr1,cr2,cr3;
+    vedic_8 vm1(v1[15:0],a[7:0],b[7:0]);
+    vedic_8 vm2(v2[15:0],a[15:8],b[7:0]);
+    vedic_8 vm3(v3[15:0],a[7:0],b[15:8]);
+    vedic_8 vm4(v4[15:0],a[15:8],b[15:8]);
+    rca_16 inst4(v2[15:0],v3[15:0],1'b0,r1[15:0],cr1);
+    rca_16 inst5(r1[15:0],{8'b00000000,v1[15:8]},1'b0,r2[15:0],cr2);
+    rca_16 inst6(v4[15:0],{cr1,7'b0000000,r2[15:8]},1'b0,s[31:16],cr3);
+    assign s[7:0]=v1[7:0];
+    assign s[15:8]=r2[7:0];
+endmodule
+module vedic_8(
+output [15:0]s,
+input [7:0]a,b
+ );
+   wire [7:0]v1;
+   wire [7:0]v2 ;
+   wire [7:0]v3;
+   wire [7:0]v4;
+   wire [7:0]r1;
+   wire [7:0]r2;
+   wire cr1,cr2,cr3;
+   vedic4 vedic_0(v1[7:0],a[3:0],b[3:0]);
+   vedic4 vedic_1(v2[7:0],a[3:0],b[7:4]);
+   vedic4 vedic_2(v3[7:0],a[7:4],b[3:0]);
+   vedic4 vedic_3(v4[7:0],a[7:4],b[7:4]);
+   rca_8 ripple0(v2[7:0],v3[7:0],1'b0,r1[7:0],cr1);
+   rca_8 ripple1(r1[7:0],{4'b0000,v1[7:4]},1'b0,r2[7:0],cr2);
+   rca_8 ripple2(v4[7:0],{cr2,3'b000,r2[7:4]},1'b0,s[15:8],cr3);
+   assign s[3:0]=v1[3:0];
+   assign s[7:4]=r2[3:0];
+   
+endmodule
+
+module vedic4(
+    output [7:0] s,
+     input [3:0] a, b
+);
+    wire [3:0] v1;
+    wire [3:0] v2;
+    wire [3:0] v3;
+    wire [3:0] v4;
+    wire [3:0] r1;
+    wire [3:0] r2;
+    wire cr1, cr2,cr3;
+
+    vedic vedic0(v1[3:0],a[1:0],b[1:0]);
+    vedic vedic1(v2[3:0],a[1:0],b[3:2]);
+    vedic vedic2(v3[3:0],a[3:2],b[1:0]);
+    vedic vedic3(v4[3:0],a[3:2],b[3:2]);
+rca_4b inst1(v2[3:0],v3[3:0],1'b0,r1[3:0],cr1);
+rca_4b inst2(r1[3:0],{2'b00,v1[3:2]},1'b0,r2[3:0],cr2);
+rca_4b inst3(v4[3:0],{0,cr1,r2[3:2]},1'b0,s[7:4],cr3); 
+
+    assign s[0]=v1[0];
+    assign s[1]=v1[1];
+    assign s[2]=r2[0];
+    assign s[3]=r2[1];
+endmodule
+
+module vedic(
+    output [3:0]s,
+    input [1:0]a,b
+);
+    wire w1, w2, w3, c1;
+    and (s[0], a[0], b[0]);
+    and (w1, a[1], b[0]);
+    and (w2, a[0], b[1]);
+    and (w3, a[1], b[1]);
+    ha ha1(s[1], c1, w1, w2);
+    ha ha2(s[2], s[3], w3, c1);
+endmodule
+
+module ha(
+    output sum, carry,
+    input a, b
+);
+    assign sum = a ^ b;
+    assign carry = a & b;
+endmodule
+module rca_4b(
+    input [3:0]a,b,
+    input cin,
+    output [3:0]sum,
+    output c4);
+
+wire c1,c2,c3;      //Carry out of each full adder
+
+full_adder fa0(a[0],b[0],cin,sum[0],c1);
+full_adder fa1(a[1],b[1],c1,sum[1],c2);
+full_adder fa2(a[2],b[2],c2,sum[2],c3);
+full_adder fa3(a[3],b[3],c3,sum[3],c4);
+                
+endmodule
+module rca_8(
+input [7:0]a,b,
+input cin,
+output [7:0]sum,
+output cout
+  );
+  wire c1,c2,c3,c4,c5,c6,c7;
+ full_adder a0(a[0],b[0],cin,sum[0],c1);
+full_adder a1(a[1],b[1],c1,sum[1],c2);
+full_adder a2(a[2],b[2],c2,sum[2],c3);
+full_adder a3(a[3],b[3],c3,sum[3],c4);
+full_adder a4(a[4],b[4],c4,sum[4],c5);
+full_adder a5(a[5],b[5],c5,sum[5],c6);
+full_adder a6(a[6],b[6],c6,sum[6],c7);
+full_adder a7(a[7],b[7],c7,sum[7],cout);
+endmodule
+module rca_16(
+    input [15:0]a, b,
+    input cin,
+    output [15:0]sum,
+    output cout
+    );
+    
+    wire c1,c2,c3;
+
+  rca_4b f0(a[3:0],b[3:0],cin,sum[3:0],c1);
+  rca_4b f1(a[7:4],b[7:4],c1,sum[7:4],c2);
+    rca_4b f2(a[11:8],b[11:8],c2,sum[11:8],c3);
+  rca_4b f3(a[15:12],b[15:12],c3,sum[15:12],cout);
+  endmodule
+  module rca_32(
+  input [31:0]a,b,
+  output [31:0]sum,
+  output cout
+  );
+  wire c1,c2,c3;
+    rca_8 f0(a[7:0],b[7:0],1'b0,sum[7:0],c1);
+  rca_8 f1(a[15:8],b[15:8],c1,sum[15:8],c2);
+    rca_8 f2(a[23:16],b[23:16],c2,sum[23:16],c3);
+  rca_8 f3(a[31:24],b[31:24],c3,sum[31:24],cout);
+  endmodule
+module full_adder(
+    input a,b,cin,
+    output sum,carry);
+
+assign sum = a ^ b ^ cin;
+assign carry = (a&b)|((a^b)&cin);
+ endmodule
